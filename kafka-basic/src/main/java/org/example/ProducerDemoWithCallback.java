@@ -1,16 +1,18 @@
 package org.example;
 
 
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
 
-public class ProducerDemo {
+public class ProducerDemoWithCallback {
 
-    private static final Logger log = LoggerFactory.getLogger(ProducerDemo.class.getSimpleName());
+    private static final Logger log = LoggerFactory.getLogger(ProducerDemoWithCallback.class.getSimpleName());
     public static void main(String[] args) {
         log.info("in main()");
         // create producer properties -- upstash properties- copy pasted
@@ -18,7 +20,7 @@ public class ProducerDemo {
         props.put("bootstrap.servers", "https://allowed-cub-14551-eu2-kafka.upstash.io:9092");
         props.put("sasl.mechanism", "SCRAM-SHA-256");
         props.put("security.protocol", "SASL_SSL");
-        props.put("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"YWxsb3dlZC1jdWItMTQ1NTEk7ioaaSji79P4vLVnpaWpgFGSHOvMECfw2IJi15w\" password=\"ODRjMzU3NGQtMmEyZS00ZjU3LTg1NTktZWQyZGFmMTUyZWIx\";");
+        props.put("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"*\" password=\"*\";");
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
@@ -29,7 +31,17 @@ public class ProducerDemo {
         ProducerRecord<String, String> producerRecord = new ProducerRecord<>("upstah-kafka", "hello-kafka");
 
         // send data
-        producer.send(producerRecord);
+        producer.send(producerRecord, new Callback() {
+            @Override
+            public void onCompletion(RecordMetadata recordMetadata, Exception e) {
+                // executed everytime the record is successfully sent or an exception is thrown
+                if (e == null) {
+                    log.info("Received new metadata", recordMetadata);
+                } else {
+                    log.error("error while producing", e);
+                }
+            }
+        });
 
         // flush and close the producer: tells the producer to send all data and block untill done -- synchronous
         producer.flush();

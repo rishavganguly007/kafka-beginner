@@ -1,40 +1,50 @@
 package org.example;
 
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.Properties;
 
-public class ProducerDemo {
+public class ConsumerDemo {
 
-    private static final Logger log = LoggerFactory.getLogger(ProducerDemo.class.getSimpleName());
+    private static final Logger log = LoggerFactory.getLogger(ConsumerDemo.class.getSimpleName());
     public static void main(String[] args) {
         log.info("in main()");
         // create producer properties -- upstash properties- copy pasted
         Properties props = new Properties();
-        props.put("bootstrap.servers", "https://allowed-cub-14551-eu2-kafka.upstash.io:9092");
+        props.put("bootstrap.servers", "allowed-cub-14551-eu2-kafka.upstash.io:9092");
         props.put("sasl.mechanism", "SCRAM-SHA-256");
         props.put("security.protocol", "SASL_SSL");
-        props.put("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"YWxsb3dlZC1jdWItMTQ1NTEk7ioaaSji79P4vLVnpaWpgFGSHOvMECfw2IJi15w\" password=\"ODRjMzU3NGQtMmEyZS00ZjU3LTg1NTktZWQyZGFmMTUyZWIx\";");
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("sasl.jaas.config", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"*****\" password=\"****\";");
+        props.put("auto.offset.reset", "earliest");
+        props.put("group.id", "YOUR_CONSUMER_GROUP");
+        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
 
-        // create the producer
-        KafkaProducer<String, String> producer = new KafkaProducer<>(props);
 
-        // create a Producer Record: a record that will be sent to Kafka
-        ProducerRecord<String, String> producerRecord = new ProducerRecord<>("upstah-kafka", "hello-kafka");
+        // create the Consumer
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
 
-        // send data
-        producer.send(producerRecord);
+        // subscribe to a topic
+        consumer.subscribe(Arrays.asList("upstah-kafka"));
 
-        // flush and close the producer: tells the producer to send all data and block untill done -- synchronous
-        producer.flush();
+        // pull data from topic
+        while(true) {
+            log.info("polling");
+            ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
+            for(ConsumerRecord<String, String> record : records) {
+                log.info("Key: " + record.key() + ", value: " + record.value());
+                log.info("partition: " + record.partition() + ", offset: " + record.offset());
+            }
 
-        // close
-        producer.close();
+        }
     }
 }
